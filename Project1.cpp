@@ -26,6 +26,9 @@ KBDLLHOOKSTRUCT kdbStruct;
 HBITMAP hBitmap;
 char lagTimeStr[6];
 
+// UI ELEMENTS
+HWND Label, TextBox, SaveButton;
+
 std::string random_string(size_t length)
 {
     auto randchar = []() -> char
@@ -107,24 +110,25 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 
         _itoa_s(lagTime, lagTimeStr, 10);
-        HWND Label = CreateWindowEx(SS_SIMPLE, "STATIC", "Lag Time (ms)", WS_CHILD | WS_VISIBLE, 10, 5, 100, 25, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-        HWND TextBox = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", lagTimeStr, WS_CHILD | WS_VISIBLE | WS_BORDER, 10, 35, 100, 20, hwnd, (HMENU)1, NULL, NULL);
+        Label = CreateWindowEx(SS_SIMPLE, "STATIC", "Lag Time (ms)", WS_CHILD | WS_VISIBLE, 10, 5, 100, 25, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+        TextBox = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", lagTimeStr, WS_CHILD | WS_VISIBLE | WS_BORDER, 10, 35, 100, 20, hwnd, (HMENU)1, NULL, NULL);
         hBitmap = LoadBitmap(hInstance, MAKEINTRESOURCE(IDB_BITMAP1));
-        HWND SendButton = CreateWindowEx(0, "BUTTON", NULL, WS_VISIBLE | WS_CHILD | BS_BITMAP, 110, 35, 60, 20, hwnd, (HMENU)3, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-        SendMessage(SendButton, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)hBitmap);
+        SaveButton = CreateWindowEx(0, "BUTTON", NULL, WS_VISIBLE | WS_CHILD | BS_BITMAP, 110, 35, 60, 20, hwnd, (HMENU)3, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+        SendMessage(SaveButton, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)hBitmap);
         break;
     }
     case WM_COMMAND:
         if (LOWORD(wParam) == 3) {
-            OutputDebugString("Button CLicked");
+            TCHAR buff[1024];
+            GetWindowText(TextBox, buff, 1024);
+            lagTime = atoi(buff);
         }
         break;
     case WM_CLOSE:
         DestroyWindow(hwnd);
         break;
     case WM_DESTROY:
-        //PostQuitMessage(0);
-
+        PostQuitMessage(0);
         break;
     default:
         return DefWindowProc(hwnd, msg, wParam, lParam);
