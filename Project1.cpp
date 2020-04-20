@@ -70,6 +70,7 @@ void lagLoop() {
     MessageBeep(MB_ICONERROR);
 }
 
+// HOOK STUFF TO LISTEN FOR KEY PRESSES WHEN WINDOW NOT IN FOCUS
 LRESULT __stdcall HookCallBack(int nCode, WPARAM wParam, LPARAM lParam) {
     if (nCode >= 0) {
         if (wParam == WM_MBUTTONDOWN) {
@@ -94,6 +95,7 @@ const char g_szClassName[] = "windowClass";
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 {
+    // HANDLE MESSAGES SUCH AS KEY PRESSES AND ADD GUI ELEMENTS
     switch (msg)
     {
     case WM_CREATE: {
@@ -132,11 +134,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     LPSTR lpCmdLine, int nCmdShow) 
 {
-    OutputDebugString("Handle it");
+    // WIN MAIN - ENTRY POINT INTO THE PROGRAM
     WNDCLASSEX wc;
     HWND hwnd;
     MSG Msg;
 
+    // SETTING WINDOW PARAMS
     wc.cbSize = sizeof(WNDCLASSEX);
     wc.style = 1;
     wc.lpfnWndProc = WndProc;
@@ -150,6 +153,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     wc.lpszClassName = g_szClassName;
     wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 
+    // REGISTER Window
     if (!RegisterClassEx(&wc)) {
         MessageBox(NULL, _T("Window Registration Failed"), _T("ERROR"), MB_ICONEXCLAMATION|MB_OK);
     }
@@ -167,10 +171,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
             MB_ICONEXCLAMATION | MB_OK);
     }
 
-    ShowWindow(GetConsoleWindow(), SW_HIDE);
-    FreeConsole();
     ShowWindow(hwnd, nCmdShow);
     UpdateWindow(hwnd);
+
+    // SETTING HOOK TO LISTEN FOR MBUTTON PRESS
     SetHook();
     while (GetMessage(&Msg, NULL, 0, 0) > 0) {
         TranslateMessage(&Msg);
