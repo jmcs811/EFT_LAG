@@ -24,6 +24,7 @@ INT lagTime = 1800;
 HHOOK _hook;
 KBDLLHOOKSTRUCT kdbStruct;
 HBITMAP hBitmap;
+char lagTimeStr[6];
 
 std::string random_string(size_t length)
 {
@@ -102,13 +103,20 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         HICON hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
         SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
 
+
+        _itoa_s(lagTime, lagTimeStr, 10);
         HWND Label = CreateWindowEx(SS_SIMPLE, "STATIC", "Lag Time (ms)", WS_CHILD | WS_VISIBLE, 10, 5, 100, 25, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-        HWND TextBox = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, 10, 35, 100, 20, hwnd, (HMENU)1, NULL, NULL);
+        HWND TextBox = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", lagTimeStr, WS_CHILD | WS_VISIBLE | WS_BORDER, 10, 35, 100, 20, hwnd, (HMENU)1, NULL, NULL);
         hBitmap = LoadBitmap(hInstance, MAKEINTRESOURCE(IDB_BITMAP1));
-        HWND SendButton = CreateWindowEx(0, "BUTTON", NULL, WS_VISIBLE | WS_CHILD | BS_BITMAP, 110, 35, 60, 20, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+        HWND SendButton = CreateWindowEx(0, "BUTTON", NULL, WS_VISIBLE | WS_CHILD | BS_BITMAP, 110, 35, 60, 20, hwnd, (HMENU)3, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
         SendMessage(SendButton, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)hBitmap);
         break;
     }
+    case WM_COMMAND:
+        if (LOWORD(wParam) == 3) {
+            OutputDebugString("Button CLicked");
+        }
+        break;
     case WM_CLOSE:
         DestroyWindow(hwnd);
         break;
@@ -140,7 +148,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wc.lpszMenuName = NULL;
     wc.lpszClassName = g_szClassName;
-    wc.hIconSm = LoadIcon(NULL, MAKEINTRESOURCE(IDI_ICON1));
+    wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 
     if (!RegisterClassEx(&wc)) {
         MessageBox(NULL, _T("Window Registration Failed"), _T("ERROR"), MB_ICONEXCLAMATION|MB_OK);
