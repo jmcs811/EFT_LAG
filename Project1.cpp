@@ -45,7 +45,7 @@ std::string random_string(size_t length)
     return str;
 }
 
-void lagLoop() {
+unsigned __stdcall lagLoop(void *data) {
     // Create a random string for the Firewall name. Prevents the same name being added/removed... Good/Bad??
     std::string mystr = random_string(fwnamelength);
 
@@ -71,13 +71,16 @@ void lagLoop() {
 
     // Beep for end of lag
     MessageBeep(MB_ICONERROR);
+    return 0;
 }
 
 // HOOK STUFF TO LISTEN FOR KEY PRESSES WHEN WINDOW NOT IN FOCUS
 LRESULT __stdcall HookCallBack(int nCode, WPARAM wParam, LPARAM lParam) {
     if (nCode >= 0) {
         if (wParam == WM_MBUTTONDOWN) {
-            lagLoop();
+            HANDLE hThread;
+            DWORD threadID;
+            hThread = (HANDLE) _beginthreadex(NULL, 0, lagLoop, NULL, 0, NULL);
         }
     }
     return CallNextHookEx(_hook, nCode, wParam, lParam);
