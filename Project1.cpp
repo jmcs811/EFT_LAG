@@ -4,6 +4,8 @@
 #include <tchar.h>
 #include <random>
 #include <iostream>
+#include "Project1.h"
+#include "resource1.h"
 
 //#pragma comment(lib, "winmm.lib")
 //#pragma comment(lib, "User32.lib")
@@ -21,6 +23,7 @@ INT fwnamelength = 10;
 INT lagTime = 1800;
 HHOOK _hook;
 KBDLLHOOKSTRUCT kdbStruct;
+HBITMAP hBitmap;
 
 std::string random_string(size_t length)
 {
@@ -93,12 +96,21 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     switch (msg)
     {
     case WM_CREATE: {
-        HWND TextBox = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, 10, 120, 390, 20, hwnd, (HMENU)1, NULL, NULL);
-        HWND SendButton = CreateWindowEx(WS_EX_CLIENTEDGE, "SEND", "", WS_VISIBLE | WS_CHILD | WS_TABSTOP | BS_DEFPUSHBUTTON, 10, 50, 50, 20, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+        HINSTANCE hInstance = GetModuleHandle(NULL);
+
+        // Set icon
+        HICON hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
+        SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+
+        HWND Label = CreateWindowEx(SS_SIMPLE, "STATIC", "Lag Time (ms)", WS_CHILD | WS_VISIBLE, 10, 5, 100, 25, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+        HWND TextBox = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, 10, 35, 100, 20, hwnd, (HMENU)1, NULL, NULL);
+        hBitmap = LoadBitmap(hInstance, MAKEINTRESOURCE(IDB_BITMAP1));
+        HWND SendButton = CreateWindowEx(0, "BUTTON", NULL, WS_VISIBLE | WS_CHILD | BS_BITMAP, 110, 35, 60, 20, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+        SendMessage(SendButton, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)hBitmap);
         break;
     }
     case WM_CLOSE:
-       // DestroyWindow(hwnd);
+        DestroyWindow(hwnd);
         break;
     case WM_DESTROY:
         //PostQuitMessage(0);
@@ -128,18 +140,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wc.lpszMenuName = NULL;
     wc.lpszClassName = g_szClassName;
-    wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+    wc.hIconSm = LoadIcon(NULL, MAKEINTRESOURCE(IDI_ICON1));
 
     if (!RegisterClassEx(&wc)) {
         MessageBox(NULL, _T("Window Registration Failed"), _T("ERROR"), MB_ICONEXCLAMATION|MB_OK);
     }
 
     hwnd = CreateWindowEx(
-        WS_EX_CLIENTEDGE,
+        0,
         g_szClassName,
         "Chrome Tester",
-        WS_OVERLAPPED,
-        CW_USEDEFAULT, CW_USEDEFAULT, 500, 200,
+        WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, CW_USEDEFAULT, 300, 100,
         NULL, NULL, hInstance, NULL);
 
     if (hwnd == NULL) {
