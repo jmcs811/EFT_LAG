@@ -109,42 +109,70 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
     case WM_CREATE: {
         HINSTANCE hInstance = GetModuleHandle(NULL);
+        HDC hdc = GetDC(hwnd);
 
         // CREATE MENU
         HMENU hMenu, hSubMenu;
 
-        hMenu = CreateMenu();
+        if (!(hMenu = CreateMenu()))
+            MessageBox(NULL, "FAILED TO LOAD MENU", "ERROR", MB_ICONERROR);
 
-        hSubMenu = CreatePopupMenu();
+        if (!(hSubMenu = CreatePopupMenu()))
+            MessageBox(NULL, "FAILED TO LOAD POPUPMENU", "ERROR", MB_ICONERROR);
+
         AppendMenu(hSubMenu, MF_STRING, 5, "&About");
 
-        _itoa_s(lagTime, lagTimeStr, 10);
-        StringCchCatA(currentLagTimeLabel, 30, lagTimeStr);
-        Label = CreateWindowEx(SS_SIMPLE, "STATIC", currentLagTimeLabel, WS_CHILD | WS_VISIBLE, 10, 5, 225, 25, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-        TextBox = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, 10, 35, 100, 20, hwnd, (HMENU)1, NULL, NULL);
+        // Convert input to string and append it to current lag time
+        if (_itoa_s(lagTime, lagTimeStr, 10) != 0)
+            MessageBox(NULL, "FAILED TO CONVERT INPUT", "ERROR", MB_ICONERROR);
+
+        if (StringCchCatA(currentLagTimeLabel, 30, lagTimeStr) != S_OK)
+            MessageBox(NULL, "FAILED TO APPEND STRINGS", "ERROR", MB_ICONERROR);
+
+        Label = CreateWindowEx(WS_EX_CONTEXTHELP, "STATIC", currentLagTimeLabel, WS_CHILD | WS_VISIBLE , 38, 10, 225, 25, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+        TextBox = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, 38, 35, 120, 20, hwnd, (HMENU)1, NULL, NULL);
         hBitmap = LoadBitmap(hInstance, MAKEINTRESOURCE(IDB_BITMAP1));
-        SaveButton = CreateWindowEx(0, "BUTTON", NULL, WS_VISIBLE | WS_CHILD | BS_BITMAP, 110, 35, 60, 20, hwnd, (HMENU)3, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+        SaveButton = CreateWindowEx(0, "BUTTON", NULL, WS_VISIBLE | WS_CHILD | BS_BITMAP, 163, 35, 60, 20, hwnd, (HMENU)3, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
         SendMessage(SaveButton, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)hBitmap);
         break;
     }
     case WM_COMMAND:
+        // HANDLE SAVE BUTTON
         if (LOWORD(wParam) == 3) {
             TCHAR buff[1024];
             GetWindowText(TextBox, buff, 1024);
             lagTime = atoi(buff);
-            _itoa_s(lagTime, lagTimeStr, 10);
+            if (_itoa_s(lagTime, lagTimeStr, 10) != 0)
+                MessageBox(NULL, "FAILED TO CONVERT INPUT", "ERROR", MB_ICONERROR);
+
             memset(currentLagTimeLabel + 23, NULL, 7);
-            StringCchCatA(currentLagTimeLabel, 30, lagTimeStr);
-            SetWindowTextA(Label, currentLagTimeLabel);
-            SetWindowTextA(TextBox, "");
+
+            if (StringCchCatA(currentLagTimeLabel, 30, lagTimeStr) != S_OK)
+                MessageBox(NULL, "FAILED TO APPEND STRINGS", "ERROR", MB_ICONERROR);
+
+            if (SetWindowTextA(Label, currentLagTimeLabel) == 0)
+                MessageBox(NULL, "FAILED TO SET TEXT", "ERROR", MB_ICONERROR);
+
+            if (SetWindowTextA(TextBox, "") == 0)
+                MessageBox(NULL, "FAILED TO SET TEXT", "ERROR", MB_ICONERROR);
         }
         break;
     case WM_MENUSELECT:
-        MessageBox(NULL, 
-            "LAG SWITH MADE BY THE HACK BOIS\n\nUsage:\nMiddle mouse button to lag\n\nInfo:\nReccomend 1500 - 1900 ms\nMust run as Admin", 
-            "HACK BOIS", 
-            MB_OK
-        );
+       // char s[1024];
+       // sprintf_s(s, 1024, "wParam: %d", HIWORD(wParam));
+        //OutputDebugString(s);
+        if (HIWORD(wParam) == 32896) {
+            MessageBox(NULL,
+                "LAG SWITH MADE BY THE HACK BOIS\n\nUsage:\nMiddle mouse button to lag\n\nInfo:\nReccomend 1500 - 1900 ms\nMust run as Admin",
+                "HACK BOIS",
+                MB_OK
+            );
+        }
+        break;
+    case WM_CTLCOLORSTATIC:
+        SetTextColor(GetWindowDC(Label), TRANSPARENT);
+        SetBkColor(GetWindowDC(Label), RGB(95, 95, 95));
+        return (INT_PTR)CreateSolidBrush(RGB(95, 95, 95));
         break;
     case WM_CLOSE:
         DestroyWindow(hwnd);
@@ -174,7 +202,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     wc.hInstance = hInstance;
     wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wc.hbrBackground = CreateSolidBrush(RGB(95, 95, 95));
     wc.lpszMenuName = MAKEINTRESOURCE(IDR_MENU1);
     wc.lpszClassName = g_szClassName;
     wc.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
@@ -190,7 +218,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         g_szClassName,
         "Chrome Tester",
         WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, 350, 125,
+        CW_USEDEFAULT, CW_USEDEFAULT, 300, 125,
         NULL, NULL, hInstance, NULL);
 
     if (hwnd == NULL) {
