@@ -129,10 +129,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         if (StringCchCatA(currentLagTimeLabel, 30, lagTimeStr) != S_OK)
             MessageBox(NULL, "FAILED TO APPEND STRINGS", "ERROR", MB_ICONERROR);
 
-        Label = CreateWindowEx(WS_EX_CONTEXTHELP, "STATIC", currentLagTimeLabel, WS_CHILD | WS_VISIBLE , 38, 10, 225, 25, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-        TextBox = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, 38, 35, 120, 20, hwnd, (HMENU)1, NULL, NULL);
+        Label = CreateWindowEx(WS_EX_CONTEXTHELP, "STATIC", currentLagTimeLabel, WS_CHILD | WS_VISIBLE , 50, 10, 200, 25, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+        TextBox = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, 50, 35, 120, 20, hwnd, (HMENU)1, NULL, NULL);
         hBitmap = LoadBitmap(hInstance, MAKEINTRESOURCE(IDB_BITMAP1));
-        SaveButton = CreateWindowEx(0, "BUTTON", NULL, WS_VISIBLE | WS_CHILD | BS_BITMAP, 163, 35, 60, 20, hwnd, (HMENU)3, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+        SaveButton = CreateWindowEx(0, "BUTTON", NULL, WS_VISIBLE | WS_CHILD | BS_BITMAP, 175, 35, 60, 20, hwnd, (HMENU)3, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
         SendMessage(SaveButton, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)hBitmap);
         break;
     }
