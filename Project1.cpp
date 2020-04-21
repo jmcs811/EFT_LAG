@@ -4,8 +4,10 @@
 #include <tchar.h>
 #include <random>
 #include <iostream>
+#include <strsafe.h>
 #include "Project1.h"
 #include "resource1.h"
+#include "Resource.h"
 
 //#pragma comment(lib, "winmm.lib")
 //#pragma comment(lib, "User32.lib")
@@ -15,6 +17,8 @@
 
 // windows firewall rule name and game executable path
 std::string rule_name = "Chrome Test";
+
+TCHAR currentLagTimeLabel[30] = _T("Current Lag Time (ms): ");
 
 // defined keys
 CONST INT lag_key = VK_MBUTTON;
@@ -79,7 +83,6 @@ LRESULT __stdcall HookCallBack(int nCode, WPARAM wParam, LPARAM lParam) {
     if (nCode >= 0) {
         if (wParam == WM_MBUTTONDOWN) {
             HANDLE hThread;
-            DWORD threadID;
             hThread = (HANDLE) _beginthreadex(NULL, 0, lagLoop, NULL, 0, NULL);
         }
     }
@@ -107,14 +110,18 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_CREATE: {
         HINSTANCE hInstance = GetModuleHandle(NULL);
 
-        // Set icon
-        HICON hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
-        SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+        // CREATE MENU
+        HMENU hMenu, hSubMenu;
 
+        hMenu = CreateMenu();
+
+        hSubMenu = CreatePopupMenu();
+        AppendMenu(hSubMenu, MF_STRING, 5, "&About");
 
         _itoa_s(lagTime, lagTimeStr, 10);
-        Label = CreateWindowEx(SS_SIMPLE, "STATIC", "Lag Time (ms)", WS_CHILD | WS_VISIBLE, 10, 5, 100, 25, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-        TextBox = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", lagTimeStr, WS_CHILD | WS_VISIBLE | WS_BORDER, 10, 35, 100, 20, hwnd, (HMENU)1, NULL, NULL);
+        StringCchCatA(currentLagTimeLabel, 30, lagTimeStr);
+        Label = CreateWindowEx(SS_SIMPLE, "STATIC", currentLagTimeLabel, WS_CHILD | WS_VISIBLE, 10, 5, 225, 25, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+        TextBox = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, 10, 35, 100, 20, hwnd, (HMENU)1, NULL, NULL);
         hBitmap = LoadBitmap(hInstance, MAKEINTRESOURCE(IDB_BITMAP1));
         SaveButton = CreateWindowEx(0, "BUTTON", NULL, WS_VISIBLE | WS_CHILD | BS_BITMAP, 110, 35, 60, 20, hwnd, (HMENU)3, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
         SendMessage(SaveButton, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)hBitmap);
@@ -125,7 +132,19 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             TCHAR buff[1024];
             GetWindowText(TextBox, buff, 1024);
             lagTime = atoi(buff);
+            _itoa_s(lagTime, lagTimeStr, 10);
+            memset(currentLagTimeLabel + 23, NULL, 7);
+            StringCchCatA(currentLagTimeLabel, 30, lagTimeStr);
+            SetWindowTextA(Label, currentLagTimeLabel);
+            SetWindowTextA(TextBox, "");
         }
+        break;
+    case WM_MENUSELECT:
+        MessageBox(NULL, 
+            "LAG SWITH MADE BY THE HACK BOIS", 
+            "HACK BOIS", 
+            MB_OK
+        );
         break;
     case WM_CLOSE:
         DestroyWindow(hwnd);
@@ -156,9 +175,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wc.lpszMenuName = NULL;
+    wc.lpszMenuName = MAKEINTRESOURCE(IDR_MENU1);
     wc.lpszClassName = g_szClassName;
-    wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+    wc.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
+    wc.hIconSm = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1), IMAGE_ICON, 16, 16, 0);
 
     // REGISTER Window
     if (!RegisterClassEx(&wc)) {
@@ -170,7 +190,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         g_szClassName,
         "Chrome Tester",
         WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, 300, 100,
+        CW_USEDEFAULT, CW_USEDEFAULT, 350, 125,
         NULL, NULL, hInstance, NULL);
 
     if (hwnd == NULL) {
