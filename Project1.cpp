@@ -141,7 +141,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         break;
     case WM_MENUSELECT:
         MessageBox(NULL, 
-            "LAG SWITH MADE BY THE HACK BOIS", 
+            "LAG SWITH MADE BY THE HACK BOIS\n\nUsage:\nMiddle mouse button to lag\n\nInfo:\nReccomend 1500 - 1900 ms\nMust run as Admin", 
             "HACK BOIS", 
             MB_OK
         );
