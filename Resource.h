@@ -2,7 +2,8 @@
 // Microsoft Visual C++ generated include file.
 // Used by Project1.rc
 //
-#define IDC_MYICON                      2
+
+#define IDI_ICON1                       2
 #define IDD_PROJECT1_DIALOG             102
 #define IDS_APP_TITLE                   103
 #define IDD_ABOUTBOX                    103
@@ -12,7 +13,7 @@
 #define IDI_SMALL                       108
 #define IDC_PROJECT1                    109
 #define IDR_MAINFRAME                   128
-#define IDI_ICON1                       129
+#define IDC_MYICON                      129
 #define IDR_MENU1                       131
 #define IDC_STATIC                      -1
 
