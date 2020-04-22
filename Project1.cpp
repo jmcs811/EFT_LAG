@@ -5,51 +5,37 @@
 #include <random>
 #include <iostream>
 #include <strsafe.h>
+#include <stdio.h>
 #include "Project1.h"
 #include "resource1.h"
 #include "Resource.h"
+#include "helperlib.h"
 
-//#pragma comment(lib, "winmm.lib")
-//#pragma comment(lib, "User32.lib")
+#define LAG_KEY_TEXT "Set Lag Key"
+#define PRESS_ANY_KEY_TEXT "PRESS ANY KEY"
 
 // looks nice, ok...
 #define sleep(_time) (std::this_thread::sleep_for(std::chrono::milliseconds(_time))) 
 
-// windows firewall rule name and game executable path
-std::string rule_name = "Chrome Test";
-
 TCHAR currentLagTimeLabel[30] = _T("Current Lag Time (ms): ");
+TCHAR currentLagKeyText[50] = _T("Current Lag Key: ");
 
 // defined keys
-CONST INT lag_key = VK_MBUTTON;
-INT exit_key = VK_END;
-INT fwnamelength = 10;
+INT lag_key = VK_MBUTTON;
 INT lagTime = 1800;
 HHOOK _hook;
 KBDLLHOOKSTRUCT kdbStruct;
+MSLLHOOKSTRUCT msllStruct;
 HBITMAP hBitmap;
 char lagTimeStr[6];
+INT btnPressed = 0;
 
 // UI ELEMENTS
-HWND Label, TextBox, SaveButton;
+HWND MainWindow;
+HWND Label, TextBox, SaveButton, lagKeyComboBox, lagKeyLabel, hotKeySaveButton, currentLagKeyLabel;
 
-std::string random_string(size_t length)
-{
-    auto randchar = []() -> char
-    {
-        const char charset[] =
-            "0123456789"
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-            "abcdefghijklmnopqrstuvwxyz";
-        const size_t max_index = (sizeof(charset) - 1);
-        return charset[rand() % max_index];
-    };
-    std::string str(length, 0);
-    std::generate_n(str.begin(), length, randchar);
-    return str;
-}
-
-unsigned __stdcall lagLoop(void *data) {
+unsigned __stdcall lagLoop(void* data) {
+    INT fwnamelength = 10;
     // Create a random string for the Firewall name. Prevents the same name being added/removed... Good/Bad??
     std::string mystr = random_string(fwnamelength);
 
@@ -81,24 +67,35 @@ unsigned __stdcall lagLoop(void *data) {
 // HOOK STUFF TO LISTEN FOR KEY PRESSES WHEN WINDOW NOT IN FOCUS
 LRESULT __stdcall HookCallBack(int nCode, WPARAM wParam, LPARAM lParam) {
     if (nCode >= 0) {
-        if (wParam == WM_MBUTTONDOWN) {
+        if (wParam == WM_MBUTTONDOWN && lag_key == VK_MBUTTON) {
             HANDLE hThread;
-            hThread = (HANDLE) _beginthreadex(NULL, 0, lagLoop, NULL, 0, NULL);
+            hThread = (HANDLE)_beginthreadex(NULL, 0, lagLoop, NULL, 0, NULL);
+        }
+        if (wParam == WM_KEYDOWN) {
+            kdbStruct = *((KBDLLHOOKSTRUCT*)lParam);
+            if (kdbStruct.vkCode == lag_key) {
+                HANDLE hThread;
+                hThread = (HANDLE)_beginthreadex(NULL, 0, lagLoop, NULL, 0, NULL);
+            }
         }
     }
     return CallNextHookEx(_hook, nCode, wParam, lParam);
 }
 
 void SetHook() {
-    if (!(_hook = SetWindowsHookEx(WH_MOUSE_LL, HookCallBack, NULL, 0))) {
-        MessageBox(NULL, "FAILED TO INSTALL HOOK", "ERROR", MB_ICONERROR);
+    if (lag_key == 4) {
+        if (!(_hook = SetWindowsHookEx(WH_MOUSE_LL, HookCallBack, NULL, 0)))
+            MessageBox(NULL, "FAILED TO INSTALL HOOK", "ERROR", MB_ICONERROR);
     }
-}   
+    else {
+        if (!(_hook = SetWindowsHookEx(WH_KEYBOARD_LL, HookCallBack, NULL, 0)))
+            MessageBox(NULL, "FAILED TO INSTALL HOOK", "ERROR", MB_ICONERROR);
+    }
+}
 
 void ReleaseHook() {
     UnhookWindowsHookEx(_hook);
 }
-
 
 const char g_szClassName[] = "windowClass";
 
@@ -123,22 +120,40 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         AppendMenu(hSubMenu, MF_STRING, 5, "&About");
 
         // Convert input to string and append it to current lag time
+        if (_itoa_s(lag_key, lagTimeStr, 10) != 0)
+            MessageBox(NULL, "FAILED TO CONVERT INPUT", "ERROR", MB_ICONERROR);
+        
+       if (StringCchCatA(currentLagKeyText, 50, vkCodeToString(lag_key)) != S_OK)
+            MessageBox(NULL, "FAILED TO APPEND STRINGS", "ERROR", MB_ICONERROR);
+
+        // HOT KEY AREA
+        lagKeyLabel = CreateWindowEx(WS_EX_CONTEXTHELP, "BUTTON", LAG_KEY_TEXT, WS_CHILD | WS_VISIBLE, 50, 10, 120, 20, hwnd, (HMENU)18, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+        hotKeySaveButton = CreateWindowEx(0, "BUTTON", NULL, WS_VISIBLE | WS_CHILD | BS_BITMAP, 175, 10, 60, 20, hwnd, (HMENU)23, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+        currentLagKeyLabel = CreateWindowEx(0, "STATIC", currentLagKeyText, WS_CHILD | WS_VISIBLE, 50, 33, 200, 25, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+        
+        // Convert input to string and append it to current lag time
         if (_itoa_s(lagTime, lagTimeStr, 10) != 0)
             MessageBox(NULL, "FAILED TO CONVERT INPUT", "ERROR", MB_ICONERROR);
 
         if (StringCchCatA(currentLagTimeLabel, 30, lagTimeStr) != S_OK)
             MessageBox(NULL, "FAILED TO APPEND STRINGS", "ERROR", MB_ICONERROR);
 
-        Label = CreateWindowEx(WS_EX_CONTEXTHELP, "STATIC", currentLagTimeLabel, WS_CHILD | WS_VISIBLE , 50, 10, 200, 25, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-        TextBox = CreateWindowEx(WS_EX_CLIENTEDGE, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, 50, 35, 120, 20, hwnd, (HMENU)1, NULL, NULL);
+        // LAG TIME AREA
+        Label = CreateWindowEx(WS_EX_CONTEXTHELP, "STATIC", currentLagTimeLabel, WS_CHILD | WS_VISIBLE , 50, 70, 200, 25, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+        TextBox = CreateWindowEx(0, "EDIT", "", WS_CHILD | WS_VISIBLE | WS_BORDER, 50, 90, 120, 20, hwnd, (HMENU)1, NULL, NULL);
+        SaveButton = CreateWindowEx(0, "BUTTON", NULL, WS_VISIBLE | WS_CHILD | BS_BITMAP, 175, 90, 60, 20, hwnd, (HMENU)3, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+
+        // LOADING BITMAPS FOR BUTTONS
         hBitmap = LoadBitmap(hInstance, MAKEINTRESOURCE(IDB_BITMAP1));
-        SaveButton = CreateWindowEx(0, "BUTTON", NULL, WS_VISIBLE | WS_CHILD | BS_BITMAP, 175, 35, 60, 20, hwnd, (HMENU)3, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
         SendMessage(SaveButton, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)hBitmap);
+        SendMessage(hotKeySaveButton, BM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)hBitmap);
         break;
     }
     case WM_COMMAND:
         // HANDLE SAVE BUTTON
-        if (LOWORD(wParam) == 3) {
+        switch (LOWORD(wParam))
+        {
+        case (3):
             TCHAR buff[1024];
             GetWindowText(TextBox, buff, 1024);
             lagTime = atoi(buff);
@@ -155,12 +170,63 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
             if (SetWindowTextA(TextBox, "") == 0)
                 MessageBox(NULL, "FAILED TO SET TEXT", "ERROR", MB_ICONERROR);
+            break;
+        case (18):
+            SetWindowText(lagKeyLabel, PRESS_ANY_KEY_TEXT);
+            btnPressed = 1;
+            //char s[1024];
+            //sprintf_s(s, 1024, "btnPressed: %d\n", btnPressed);
+            SetFocus(MainWindow);
+            break;
+        case (23):
+            memset(currentLagKeyText + 17, NULL, 33);
+
+            if (_itoa_s(lag_key, lagTimeStr, 10) != 0)
+                MessageBox(NULL, "FAILED TO CONVERT INPUT", "ERROR", MB_ICONERROR);
+
+            if (StringCchCatA(currentLagKeyText, 50, vkCodeToString(lag_key)) != S_OK)
+                MessageBox(NULL, "FAILED TO APPEND STRINGS", "ERROR", MB_ICONERROR);
+
+            SetWindowText(currentLagKeyLabel, currentLagKeyText);
+        default:
+            break;
         }
+    case WM_KEYDOWN:
+        //OutputDebugString("WM_KEYDOWN\n");
+        //char s[1024];
+        //sprintf_s(s, 1024, "key: %d\n", wParam);
+        if (btnPressed == 1) {
+            if (wParam == 18)
+                break;
+            if (lag_key == VK_MBUTTON)
+                lag_key = wParam;
+                SetHook();
+            lag_key = wParam;
+            //char s[1024];
+            //sprintf_s(s, 1024, "key: %d\n", wParam);
+            //OutputDebugString(s);
+            btnPressed = 0;
+        }
+        SetWindowText(lagKeyLabel, LAG_KEY_TEXT);
+        break;
+    case WM_MBUTTONDOWN:
+        OutputDebugString("WM_MBUTTONDOWN\n");
+        if (btnPressed == 1) {
+            if (wParam == 18)
+                break;
+
+            if (lag_key != VK_MBUTTON)
+                lag_key = wParam;
+                SetHook();
+            lag_key = VK_MBUTTON;
+            char s[1024];
+            sprintf_s(s, 1024, "mouse: %d\n", VK_MBUTTON);
+            OutputDebugString(s);
+            btnPressed = 0;
+        }
+        SetWindowText(lagKeyLabel, LAG_KEY_TEXT);
         break;
     case WM_MENUSELECT:
-       // char s[1024];
-       // sprintf_s(s, 1024, "wParam: %d", HIWORD(wParam));
-        //OutputDebugString(s);
         if (HIWORD(wParam) == 32896) {
             MessageBox(NULL,
                 "LAG SWITH MADE BY THE HACK BOIS\n\nUsage:\nMiddle mouse button to lag\n\nInfo:\nReccomend 1500 - 1900 ms\nMust run as Admin",
@@ -190,8 +256,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 {
     // WIN MAIN - ENTRY POINT INTO THE PROGRAM
     WNDCLASSEX wc;
-    HWND hwnd;
     MSG Msg;
+    LPCSTR mystr = random_string(10);
 
     // SETTING WINDOW PARAMS
     wc.cbSize = sizeof(WNDCLASSEX);
@@ -213,21 +279,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         MessageBox(NULL, _T("Window Registration Failed"), _T("ERROR"), MB_ICONEXCLAMATION|MB_OK);
     }
 
-    hwnd = CreateWindowEx(
+    MainWindow = CreateWindowEx(
         0,
         g_szClassName,
-        "Chrome Tester",
+        mystr,
         WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, 300, 125,
+        CW_USEDEFAULT, CW_USEDEFAULT, 300, 175,
         NULL, NULL, hInstance, NULL);
 
-    if (hwnd == NULL) {
+    if (MainWindow == NULL) {
         MessageBox(NULL, _T("WINDOW CREATION FAILED"), _T("ERROR!"),
             MB_ICONEXCLAMATION | MB_OK);
     }
 
-    ShowWindow(hwnd, nCmdShow);
-    UpdateWindow(hwnd);
+    ShowWindow(MainWindow, nCmdShow);
+    UpdateWindow(MainWindow);
 
     // SETTING HOOK TO LISTEN FOR MBUTTON PRESS
     SetHook();
@@ -236,4 +302,4 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         DispatchMessage(&Msg);
     }
     return Msg.wParam;
-}
+} 
