@@ -1,5 +1,5 @@
 #include "helperlib.h"
-#pragma comment(lib, "winhttp.lib")
+#pragma comment(lib, "Wininet.lib")
 
 STRSAFE_LPSTR vkCodeToString(INT vkCode) {
     switch (vkCode)
@@ -269,4 +269,80 @@ LPCSTR random_string(size_t length)
     std::string str(length, 0);
     std::generate_n(str.begin(), length, randchar);
     return str.c_str();
+}
+
+void postRequest() {
+    HINTERNET hSession = InternetOpen(
+        "Mozilla/5.0",
+        INTERNET_OPEN_TYPE_PRECONFIG,
+        NULL,
+        NULL,
+        0
+    );
+
+    HINTERNET hConnect = InternetConnect(
+        hSession,
+        "127.0.0.1",
+        5000,
+        0,
+        0,
+        INTERNET_SERVICE_HTTP,
+        0,
+        0
+    );
+
+    HINTERNET hHttpFile = HttpOpenRequest(
+        hConnect,
+        "POST",
+        "/api/verify",
+        NULL,
+        NULL,
+        NULL,
+        0,
+        0
+    );
+
+    while (!HttpSendRequest(hHttpFile, NULL, 0, 0, 0)) {
+        OutputDebugString("Error");
+
+        InternetErrorDlg(
+            GetDesktopWindow(),
+            hHttpFile,
+            ERROR_INTERNET_CLIENT_AUTH_CERT_NEEDED,
+            FLAGS_ERROR_UI_FILTER_FOR_ERRORS
+            | FLAGS_ERROR_UI_FLAGS_GENERATE_DATA
+            | FLAGS_ERROR_UI_FLAGS_CHANGE_OPTIONS,
+            NULL
+        );
+    }
+
+    DWORD dwFileSize;
+    dwFileSize = 512;
+
+    char* buffer;
+    buffer = new char[dwFileSize + 1];
+
+    while (true) {
+        DWORD dwBytesRead;
+        BOOL bRead;
+
+        bRead = InternetReadFile(
+            hHttpFile,
+            buffer,
+            dwFileSize + 1,
+            &dwBytesRead
+        );
+
+        if (dwBytesRead == 0) break;
+
+        if (!bRead)
+            OutputDebugString("Read error");
+        else
+            buffer[dwBytesRead] = 0;
+            OutputDebugString(buffer);
+    }
+
+    InternetCloseHandle(hHttpFile);
+    InternetCloseHandle(hConnect);
+    InternetCloseHandle(hSession);
 }
