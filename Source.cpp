@@ -271,7 +271,9 @@ LPCSTR random_string(size_t length)
     return str.c_str();
 }
 
-void postRequest() {
+DWORD postRequest(CHAR *key) {
+    char headers[] = "Content-Type: application/json\r\n";
+    const char *data = "{\"key\": \"12345\", \"hwid\": \"sadf\"}";
     HINTERNET hSession = InternetOpen(
         "Mozilla/5.0",
         INTERNET_OPEN_TYPE_PRECONFIG,
@@ -301,9 +303,14 @@ void postRequest() {
         0,
         0
     );
+ 
+    HttpAddRequestHeaders(hHttpFile, headers, strlen(headers), HTTP_ADDREQ_FLAG_ADD);
 
-    while (!HttpSendRequest(hHttpFile, NULL, 0, 0, 0)) {
-        OutputDebugString("Error");
+    while (!HttpSendRequestA(hHttpFile, NULL, 0, (char*) data, strlen(data) + 1)) {
+        INT error = GetLastError();
+        char temp[20];
+        snprintf(temp, 20, "Error: %ld\n", error);
+        OutputDebugString(temp);
 
         InternetErrorDlg(
             GetDesktopWindow(),
@@ -314,6 +321,7 @@ void postRequest() {
             | FLAGS_ERROR_UI_FLAGS_CHANGE_OPTIONS,
             NULL
         );
+        break;
     }
 
     DWORD dwFileSize;
@@ -345,4 +353,29 @@ void postRequest() {
     InternetCloseHandle(hHttpFile);
     InternetCloseHandle(hConnect);
     InternetCloseHandle(hSession);
+
+    return 1;
+}
+
+DWORD getKeyFromFile(CHAR *buffer) {
+    DWORD bytesRead = 0;
+    char currentPath[MAX_PATH];
+    DWORD pathLength = GetCurrentDirectory(MAX_PATH, (LPSTR) currentPath);
+
+    // APPEND key.txt to currentname
+    strcat_s(currentPath, "\\key.txt");
+
+    HANDLE hFile;
+    hFile = CreateFile((LPCSTR) currentPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hFile == INVALID_HANDLE_VALUE)
+        return 0;
+
+    do {
+        if (!ReadFile(hFile, buffer, sizeof(buffer), &bytesRead, NULL));
+        OutputDebugString("READ ERROR");
+
+        if (bytesRead == 0) break;
+    } while (true);
+
+    return bytesRead;
 }

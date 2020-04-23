@@ -262,9 +262,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     LPSTR lpCmdLine, int nCmdShow) 
 {
 
-    postRequest();
-
-
+    //postRequest();
+    CHAR temp[20] = {};
+    DWORD test = getKeyFromFile(temp);
+    if (test == 0)
+        OutputDebugString("READ ERROR");
+    
+    DWORD key_succ = postRequest(temp);
+    if (key_succ == 0) {
+        MessageBox(NULL, "IVALID KEY. TRY AGAIN", "ERROR", MB_ICONERROR);
+        return 1;
+    }
     // WIN MAIN - ENTRY POINT INTO THE PROGRAM
     WNDCLASSEX wc;
     MSG Msg;
