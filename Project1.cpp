@@ -6,7 +6,6 @@
 #include <strsafe.h>
 #include <stdio.h>
 #include "Project1.h"
-#include "resource1.h"
 #include "Resource.h"
 #include "helperlib.h"
 
@@ -269,10 +268,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         OutputDebugString("READ ERROR");
     
     DWORD key_succ = postRequest(temp);
-    if (key_succ == 0) {
-        MessageBox(NULL, "IVALID KEY. TRY AGAIN", "ERROR", MB_ICONERROR);
+    if (key_succ == 1) {
+        MessageBox(NULL, "INVALID KEY. TRY AGAIN", "ERROR", MB_ICONERROR);
         return 1;
     }
+    else if (key_succ == -1) {
+        MessageBox(NULL, "INVALID HWID. TRY AGAIN", "ERROR", MB_ICONERROR);
+        return 1;
+    }
+
     // WIN MAIN - ENTRY POINT INTO THE PROGRAM
     WNDCLASSEX wc;
     MSG Msg;

@@ -11,9 +11,9 @@
 #include <wininet.h>
 #include <wbemidl.h>
 #include <tchar.h>
-#pragma comment(lib, "wbemuuid.lib");
+#include <string.h>
 
-#define _WIN32_DCOM
+
 #define sleep(_time) (std::this_thread::sleep_for(std::chrono::milliseconds(_time))) 
 
 // PROTOS

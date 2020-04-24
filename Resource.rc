@@ -50,13 +50,7 @@ END
 // Bitmap
 //
 
-IDB_BITMAP1             BITMAP                  "bitmap1.bmp"
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// IDC_SAVE_LAG
-//
+IDB_BITMAP1             BITMAP                  "X:\\Users\\jcasey\\source\\repos\\Project1\\bitmap1.bmp"
 
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////

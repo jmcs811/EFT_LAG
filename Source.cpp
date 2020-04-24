@@ -1,6 +1,10 @@
 #include "helperlib.h"
 #pragma comment(lib, "Wininet.lib")
 
+#define ACCESS_GRANTED "{\n  \"msg\": \"access_granted\"\n}\n"
+#define INVALID_KEY "{\n  \"msg\": \"INVALID KEY\"\n}\n"
+#define INVALID_HWID "{\n  \"msg\": \"INVALID HWID\"\n}\n"
+
 STRSAFE_LPSTR vkCodeToString(INT vkCode) {
     switch (vkCode)
     {
@@ -273,7 +277,7 @@ LPCSTR random_string(size_t length)
 
 DWORD postRequest(CHAR *key) {
     char headers[] = "Content-Type: application/json\r\n";
-    const char *data = "{\"key\": \"12345\", \"hwid\": \"sadf\"}";
+    const char *data = "{\"secret\":\"thisisthesecret\",\"key\":\"38f2ee0c-85d7-11ea-b6fe-b42e993594a7\", \"hwid\": \"hasdfa\"}";
     HINTERNET hSession = InternetOpen(
         "Mozilla/5.0",
         INTERNET_OPEN_TYPE_PRECONFIG,
@@ -325,13 +329,13 @@ DWORD postRequest(CHAR *key) {
     }
 
     DWORD dwFileSize;
-    dwFileSize = 512;
+    dwFileSize = 50;
 
-    char* buffer;
+    char* buffer{};
     buffer = new char[dwFileSize + 1];
-
+    DWORD dwBytesRead;
     while (true) {
-        DWORD dwBytesRead;
+        
         BOOL bRead;
 
         bRead = InternetReadFile(
@@ -348,13 +352,18 @@ DWORD postRequest(CHAR *key) {
         else
             buffer[dwBytesRead] = 0;
             OutputDebugString(buffer);
+           
     }
 
     InternetCloseHandle(hHttpFile);
     InternetCloseHandle(hConnect);
     InternetCloseHandle(hSession);
-
-    return 1;
+    if (strcmp(buffer, ACCESS_GRANTED) == 0)
+        return 0;
+    else if (strcmp(buffer, INVALID_KEY) == 0)
+        return 1;
+    else if (strcmp(buffer, INVALID_HWID) == 0)
+        return -1;
 }
 
 DWORD getKeyFromFile(CHAR *buffer) {
