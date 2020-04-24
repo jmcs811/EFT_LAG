@@ -260,19 +260,24 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     LPSTR lpCmdLine, int nCmdShow) 
 {
+    CHAR hwid[1024];
+    CHAR key[37];
+    DWORD result;
 
-    //postRequest();
-    CHAR temp[20] = {};
-    DWORD test = getKeyFromFile(temp);
-    if (test == 0)
-        OutputDebugString("READ ERROR");
+    result = getHwid(hwid);
+    if (result == 0)
+        MessageBox(NULL, "ERROR GETTING INFO 1", "ERROR", MB_ICONERROR);
+
+    result = getKeyFromFile(key);
+    if (result == 1)
+        MessageBox(NULL, "ERROR GETTING INFO 2", "ERROR", MB_ICONERROR);;
     
-    DWORD key_succ = postRequest(temp);
-    if (key_succ == 1) {
+    result = postRequest(key, hwid);
+    if (result == 1) {
         MessageBox(NULL, "INVALID KEY. TRY AGAIN", "ERROR", MB_ICONERROR);
         return 1;
     }
-    else if (key_succ == -1) {
+    else if (result == -1) {
         MessageBox(NULL, "INVALID HWID. TRY AGAIN", "ERROR", MB_ICONERROR);
         return 1;
     }

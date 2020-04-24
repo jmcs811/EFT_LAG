@@ -1,9 +1,9 @@
 #include "helperlib.h"
 #pragma comment(lib, "Wininet.lib")
 
-#define ACCESS_GRANTED "{\n  \"msg\": \"access_granted\"\n}\n"
-#define INVALID_KEY "{\n  \"msg\": \"INVALID KEY\"\n}\n"
-#define INVALID_HWID "{\n  \"msg\": \"INVALID HWID\"\n}\n"
+#define ACCESS_GRANTED "{\"msg\":\"access_granted\"}\n"
+#define INVALID_KEY "{\"msg\":\"INVALID KEY\"}\n"
+#define INVALID_HWID "{\"msg\":\"INVALID HWID\"}\n"
 
 STRSAFE_LPSTR vkCodeToString(INT vkCode) {
     switch (vkCode)
@@ -275,9 +275,11 @@ LPCSTR random_string(size_t length)
     return str.c_str();
 }
 
-DWORD postRequest(CHAR *key) {
+DWORD postRequest(CHAR *key, CHAR *hwid) {
     char headers[] = "Content-Type: application/json\r\n";
-    const char *data = "{\"secret\":\"thisisthesecret\",\"key\":\"38f2ee0c-85d7-11ea-b6fe-b42e993594a7\", \"hwid\": \"hasdfa\"}";
+    //const char *data = "{\"secret\":\"thisisthesecret\",\"key\":\"38f2ee0c-85d7-11ea-b6fe-b42e993594a7\", \"hwid\": \"hasdfa\"}";
+    char data[1024] = {};
+    snprintf(data, sizeof(data), "{\"secret\":\"thisisthesecret\",\"key\":\"%s\", \"hwid\": \"%s\"}", key, hwid);
     HINTERNET hSession = InternetOpen(
         "Mozilla/5.0",
         INTERNET_OPEN_TYPE_PRECONFIG,
@@ -288,7 +290,7 @@ DWORD postRequest(CHAR *key) {
 
     HINTERNET hConnect = InternetConnect(
         hSession,
-        "127.0.0.1",
+        "167.71.152.13",
         5000,
         0,
         0,
@@ -331,7 +333,7 @@ DWORD postRequest(CHAR *key) {
     DWORD dwFileSize;
     dwFileSize = 50;
 
-    char* buffer{};
+    char* buffer= {};
     buffer = new char[dwFileSize + 1];
     DWORD dwBytesRead;
     while (true) {
@@ -377,14 +379,56 @@ DWORD getKeyFromFile(CHAR *buffer) {
     HANDLE hFile;
     hFile = CreateFile((LPCSTR) currentPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hFile == INVALID_HANDLE_VALUE)
-        return 0;
+        return 1;
 
     do {
-        if (!ReadFile(hFile, buffer, sizeof(buffer), &bytesRead, NULL));
+        if (!ReadFile(hFile, buffer, 36, &bytesRead, NULL));
         OutputDebugString("READ ERROR");
-
-        if (bytesRead == 0) break;
-    } while (true);
-
+    } while (bytesRead > 0);
+    buffer[36] = 0;
     return bytesRead;
+}
+
+DWORD getHwid(CHAR *hwid) {
+    // GET VOLUME INFO
+    TCHAR volumeName[MAX_PATH + 1] = { 0 };
+    TCHAR fileSystemName[MAX_PATH + 1] = { 0 };
+    DWORD serialNumber = 0;
+    DWORD maxComponentLen = 0;
+    DWORD fileSystemFlags = 0;
+    if (GetVolumeInformation(
+        _T("C:\\"),
+        volumeName,
+        ARRAYSIZE(volumeName),
+        &serialNumber,
+        &maxComponentLen,
+        &fileSystemFlags,
+        fileSystemName,
+        ARRAYSIZE(fileSystemName)
+    ) == 0) {
+        return 0;
+    }
+
+    // GET COMPUTER NAME
+    TCHAR computerName[MAX_COMPUTERNAME_LENGTH + 1];
+    DWORD size = sizeof(computerName) / sizeof(computerName[0]);
+    if (GetComputerName(computerName, &size) == 0) {
+        return 0;
+    }
+
+    // GET CPU INFO
+    int cpuinfo[4] = { 0, 0, 0, 0 };
+    __cpuid(cpuinfo, 0);
+    char16_t hash = 0;
+    char16_t* ptr = (char16_t*)(&cpuinfo[0]);
+    for (char32_t i = 0; i < 8; i++)
+        hash += ptr[i];
+
+    
+    snprintf(hwid, 1024, "%s%s%lu%lu%lu%s%lu%d", volumeName, fileSystemName, serialNumber, maxComponentLen, fileSystemFlags, computerName, size, hash);
+    CryptoPP::SHA256 sha256;
+    std::string digest;
+    CryptoPP::StringSource foo(hwid, true, new CryptoPP::HashFilter(sha256, new CryptoPP::HexEncoder(new CryptoPP::StringSink(digest))));
+    snprintf(hwid, 1024, "%s", digest.c_str());
+    return 1;
 }
