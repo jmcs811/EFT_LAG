@@ -74,5 +74,8 @@
     <None Include="idc_save.bin">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="..\..\..\..\..\downloads\wave2.bin">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

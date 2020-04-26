@@ -9,6 +9,8 @@
 #include "Resource.h"
 #include "helperlib.h"
 
+#pragma comment(lib, "Winmm.lib")
+
 #define LAG_KEY_TEXT "Set Lag Key"
 #define PRESS_ANY_KEY_TEXT "PRESS ANY KEY"
 
@@ -33,6 +35,7 @@ HWND MainWindow;
 HWND Label, TextBox, SaveButton, lagKeyComboBox, lagKeyLabel, currentLagKeyLabel;
 
 unsigned __stdcall lagLoop(void* data) {
+    HINSTANCE hInstance = GetModuleHandle(NULL);
     INT fwnamelength = 10;
     // Create a random string for the Firewall name. Prevents the same name being added/removed... Good/Bad??
     std::string mystr = random_string(fwnamelength);
@@ -40,7 +43,8 @@ unsigned __stdcall lagLoop(void* data) {
     printf("[Middle Mouse Button Pressed]\n");
 
     // Do our initial beep for start
-    MessageBeep(MB_ICONERROR);
+    //MessageBeep(MB_ICONERROR);
+    PlaySound("SoundName", hInstance, SND_RESOURCE | SND_ASYNC);
 
     // Create our netsh rule strings
     std::string inrule = "netsh advfirewall firewall add rule name=" + mystr + " dir=in action=block";
@@ -58,7 +62,7 @@ unsigned __stdcall lagLoop(void* data) {
     WinExec(delrule.c_str(), SW_HIDE);
 
     // Beep for end of lag
-    MessageBeep(MB_ICONERROR);
+    PlaySound("SoundName", hInstance, SND_RESOURCE | SND_ASYNC);
     return 0;
 }
 
@@ -262,15 +266,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 {
     CHAR hwid[1024];
     CHAR key[37];
-    DWORD result;
+    INT result;
 
     result = getHwid(hwid);
-    if (result == 0)
+    if (result == 0) {
         MessageBox(NULL, "ERROR GETTING INFO 1", "ERROR", MB_ICONERROR);
+        return 1;
+    }
 
     result = getKeyFromFile(key);
-    if (result == 1)
-        MessageBox(NULL, "ERROR GETTING INFO 2", "ERROR", MB_ICONERROR);;
+    if (result == 1) {
+        MessageBox(NULL, "ERROR READING KEY\nplace key.txt is same dir as laggr.exe", "ERROR", MB_ICONERROR);
+        return 1;
+    }
     
     result = postRequest(key, hwid);
     if (result == 1) {
@@ -279,6 +287,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     }
     else if (result == -1) {
         MessageBox(NULL, "INVALID HWID. TRY AGAIN", "ERROR", MB_ICONERROR);
+        return 1;
+    }
+    else if (result == -2) {
+        MessageBox(NULL, "UNKNOWN ERROR\nCheck key file and try again", "ERROR", MB_ICONERROR);
         return 1;
     }
 

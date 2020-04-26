@@ -1,9 +1,12 @@
 #include "helperlib.h"
 #pragma comment(lib, "Wininet.lib")
 
-#define ACCESS_GRANTED "{\"msg\":\"access_granted\"}\n"
-#define INVALID_KEY "{\"msg\":\"INVALID KEY\"}\n"
-#define INVALID_HWID "{\"msg\":\"INVALID HWID\"}\n"
+#define ACCESS_GRANTED "{\"msg\": \"access_granted\"}\n"
+#define INVALID_KEY "{\"msg\": \"INVALID KEY\"}\n"
+#define INVALID_HWID "{\"msg\": \"INVALID HWID\"}\n"
+#define IP_ADDR "167.71.152.13"
+#define ROUTE "api/verify"
+#define PORT 80
 
 STRSAFE_LPSTR vkCodeToString(INT vkCode) {
     switch (vkCode)
@@ -277,9 +280,8 @@ LPCSTR random_string(size_t length)
 
 DWORD postRequest(CHAR *key, CHAR *hwid) {
     char headers[] = "Content-Type: application/json\r\n";
-    //const char *data = "{\"secret\":\"thisisthesecret\",\"key\":\"38f2ee0c-85d7-11ea-b6fe-b42e993594a7\", \"hwid\": \"hasdfa\"}";
     char data[1024] = {};
-    snprintf(data, sizeof(data), "{\"secret\":\"thisisthesecret\",\"key\":\"%s\", \"hwid\": \"%s\"}", key, hwid);
+    snprintf(data, sizeof(data), "{\"secret\":\"4pUAauwutDFvTr9J\",\"key\":\"%s\", \"hwid\": \"%s\"}", key, hwid);
     HINTERNET hSession = InternetOpen(
         "Mozilla/5.0",
         INTERNET_OPEN_TYPE_PRECONFIG,
@@ -290,8 +292,8 @@ DWORD postRequest(CHAR *key, CHAR *hwid) {
 
     HINTERNET hConnect = InternetConnect(
         hSession,
-        "167.71.152.13",
-        5000,
+        IP_ADDR,
+        PORT,
         0,
         0,
         INTERNET_SERVICE_HTTP,
@@ -302,7 +304,7 @@ DWORD postRequest(CHAR *key, CHAR *hwid) {
     HINTERNET hHttpFile = HttpOpenRequest(
         hConnect,
         "POST",
-        "/api/verify",
+        ROUTE,
         NULL,
         NULL,
         NULL,
@@ -366,6 +368,8 @@ DWORD postRequest(CHAR *key, CHAR *hwid) {
         return 1;
     else if (strcmp(buffer, INVALID_HWID) == 0)
         return -1;
+    else
+        return -2;
 }
 
 DWORD getKeyFromFile(CHAR *buffer) {
@@ -386,6 +390,7 @@ DWORD getKeyFromFile(CHAR *buffer) {
         OutputDebugString("READ ERROR");
     } while (bytesRead > 0);
     buffer[36] = 0;
+    CloseHandle(hFile);
     return bytesRead;
 }
 
