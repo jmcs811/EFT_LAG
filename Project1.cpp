@@ -37,6 +37,18 @@ BOOL isKeyValid = true;
 HWND MainWindow;
 HWND Label, TextBox, SaveButton, lagKeyComboBox, lagKeyLabel, currentLagKeyLabel;
 
+unsigned __stdcall keyCheck(void* data) {
+    while (true) {
+        int expirationCheck = postRequest(key, hwid);
+        if (expirationCheck != 0) {
+            isKeyValid = false;
+            break;
+        }
+        sleep(300000);
+    }
+    return 0;
+}
+
 unsigned __stdcall lagLoop(void* data) {
     if (!isKeyValid) {
         SetWindowText(MainWindow, "KEY EXPIRED");
@@ -47,8 +59,6 @@ unsigned __stdcall lagLoop(void* data) {
     INT fwnamelength = 10;
     // Create a random string for the Firewall name. Prevents the same name being added/removed... Good/Bad??
     std::string mystr = random_string(fwnamelength);
-
-    printf("[Middle Mouse Button Pressed]\n");
 
     // Do our initial beep for start
     //MessageBeep(MB_ICONERROR);
@@ -72,9 +82,6 @@ unsigned __stdcall lagLoop(void* data) {
     // Beep for end of lag
     PlaySound("SoundName", hInstance, SND_RESOURCE | SND_ASYNC);
 
-    int expirationCheck = postRequest(key, hwid);
-    if (expirationCheck != 0)
-        isKeyValid = false;
     return 0;
 }
 
@@ -225,7 +232,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         SetWindowText(lagKeyLabel, LAG_KEY_TEXT);
         break;
     case WM_MBUTTONDOWN:
-        OutputDebugString("WM_MBUTTONDOWN\n");
         if (btnPressed == 1) {
             if (wParam == 18)
                 break;
@@ -307,6 +313,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         MessageBox(NULL, "UNKNOWN ERROR\nCheck key file and try again", "UNKNOWN ERROR", MB_ICONERROR);
         return 1;
     }
+
+    HANDLE hCheckKeyThread;
+    hCheckKeyThread = (HANDLE)_beginthreadex(NULL, 0, keyCheck, NULL, 0, NULL);
 
     // WIN MAIN - ENTRY POINT INTO THE PROGRAM
     WNDCLASSEX wc;
