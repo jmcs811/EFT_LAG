@@ -4,6 +4,7 @@
 #define ACCESS_GRANTED "{\"msg\": \"access_granted\"}\n"
 #define INVALID_KEY "{\"msg\": \"INVALID KEY\"}\n"
 #define INVALID_HWID "{\"msg\": \"INVALID HWID\"}\n"
+#define KEY_EXPIRED "{\"msg\": \"KEY EXPIRED\"}\n"
 #define IP_ADDR "167.71.152.13"
 #define ROUTE "api/verify"
 #define PORT 80
@@ -368,8 +369,10 @@ DWORD postRequest(CHAR *key, CHAR *hwid) {
         return 1;
     else if (strcmp(buffer, INVALID_HWID) == 0)
         return -1;
-    else
+    else if (strcmp(buffer, KEY_EXPIRED) == 0)
         return -2;
+    else
+        return -3;
 }
 
 DWORD getKeyFromFile(CHAR *buffer) {

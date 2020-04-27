@@ -282,15 +282,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     
     result = postRequest(key, hwid);
     if (result == 1) {
-        MessageBox(NULL, "INVALID KEY. TRY AGAIN", "ERROR", MB_ICONERROR);
+        MessageBox(NULL, "Invalid key. Ensure 'key.txt' is accurate. No trailing space", "KEY ERROR", MB_ICONERROR);
         return 1;
     }
     else if (result == -1) {
-        MessageBox(NULL, "INVALID HWID. TRY AGAIN", "ERROR", MB_ICONERROR);
+        MessageBox(NULL, "Invalid hardware id.", "HWID ERROR", MB_ICONERROR);
         return 1;
     }
     else if (result == -2) {
-        MessageBox(NULL, "UNKNOWN ERROR\nCheck key file and try again", "ERROR", MB_ICONERROR);
+        MessageBox(NULL, "Buy a new key", "EXPIRED KEY", MB_ICONERROR);
+        return 1;
+    }
+    else if (result == -3) {
+        MessageBox(NULL, "UNKNOWN ERROR\nCheck key file and try again", "UNKNOWN ERROR", MB_ICONERROR);
         return 1;
     }
 
