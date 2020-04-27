@@ -29,12 +29,20 @@ MSLLHOOKSTRUCT msllStruct;
 HBITMAP hBitmap;
 char lagTimeStr[6];
 INT btnPressed = 0;
+CHAR hwid[1024];
+CHAR key[37];
+BOOL isKeyValid = true;
 
 // UI ELEMENTS
 HWND MainWindow;
 HWND Label, TextBox, SaveButton, lagKeyComboBox, lagKeyLabel, currentLagKeyLabel;
 
 unsigned __stdcall lagLoop(void* data) {
+    if (!isKeyValid) {
+        SetWindowText(MainWindow, "KEY EXPIRED");
+        return 0;
+    }
+
     HINSTANCE hInstance = GetModuleHandle(NULL);
     INT fwnamelength = 10;
     // Create a random string for the Firewall name. Prevents the same name being added/removed... Good/Bad??
@@ -63,6 +71,10 @@ unsigned __stdcall lagLoop(void* data) {
 
     // Beep for end of lag
     PlaySound("SoundName", hInstance, SND_RESOURCE | SND_ASYNC);
+
+    int expirationCheck = postRequest(key, hwid);
+    if (expirationCheck != 0)
+        isKeyValid = false;
     return 0;
 }
 
@@ -264,8 +276,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     LPSTR lpCmdLine, int nCmdShow) 
 {
-    CHAR hwid[1024];
-    CHAR key[37];
     INT result;
 
     result = getHwid(hwid);
