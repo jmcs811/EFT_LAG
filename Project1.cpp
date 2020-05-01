@@ -6,9 +6,10 @@
 #include <strsafe.h>
 #include <stdio.h>
 #include "Project1.h"
-#include "resource1.h"
 #include "Resource.h"
 #include "helperlib.h"
+
+#pragma comment(lib, "Winmm.lib")
 
 #define LAG_KEY_TEXT "Set Lag Key"
 #define PRESS_ANY_KEY_TEXT "PRESS ANY KEY"
@@ -28,20 +29,40 @@ MSLLHOOKSTRUCT msllStruct;
 HBITMAP hBitmap;
 char lagTimeStr[6];
 INT btnPressed = 0;
+CHAR hwid[1024];
+CHAR key[37];
+BOOL isKeyValid = true;
 
 // UI ELEMENTS
 HWND MainWindow;
 HWND Label, TextBox, SaveButton, lagKeyComboBox, lagKeyLabel, currentLagKeyLabel;
 
+unsigned __stdcall keyCheck(void* data) {
+    while (true) {
+        int expirationCheck = postRequest(key, hwid);
+        if (expirationCheck != 0) {
+            isKeyValid = false;
+            break;
+        }
+        sleep(300000);
+    }
+    return 0;
+}
+
 unsigned __stdcall lagLoop(void* data) {
+    if (!isKeyValid) {
+        SetWindowText(MainWindow, "KEY EXPIRED");
+        return 0;
+    }
+
+    HINSTANCE hInstance = GetModuleHandle(NULL);
     INT fwnamelength = 10;
     // Create a random string for the Firewall name. Prevents the same name being added/removed... Good/Bad??
     std::string mystr = random_string(fwnamelength);
 
-    printf("[Middle Mouse Button Pressed]\n");
-
     // Do our initial beep for start
-    MessageBeep(MB_ICONERROR);
+    //MessageBeep(MB_ICONERROR);
+    PlaySound("SoundName", hInstance, SND_RESOURCE | SND_ASYNC);
 
     // Create our netsh rule strings
     std::string inrule = "netsh advfirewall firewall add rule name=" + mystr + " dir=in action=block";
@@ -59,7 +80,8 @@ unsigned __stdcall lagLoop(void* data) {
     WinExec(delrule.c_str(), SW_HIDE);
 
     // Beep for end of lag
-    MessageBeep(MB_ICONERROR);
+    PlaySound("SoundName", hInstance, SND_RESOURCE | SND_ASYNC);
+
     return 0;
 }
 
@@ -210,7 +232,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         SetWindowText(lagKeyLabel, LAG_KEY_TEXT);
         break;
     case WM_MBUTTONDOWN:
-        OutputDebugString("WM_MBUTTONDOWN\n");
         if (btnPressed == 1) {
             if (wParam == 18)
                 break;
@@ -261,6 +282,41 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     LPSTR lpCmdLine, int nCmdShow) 
 {
+    INT result;
+
+    result = getHwid(hwid);
+    if (result == 0) {
+        MessageBox(NULL, "ERROR GETTING INFO 1", "ERROR", MB_ICONERROR);
+        return 1;
+    }
+
+    result = getKeyFromFile(key);
+    if (result == 1) {
+        MessageBox(NULL, "ERROR READING KEY\nplace key.txt is same dir as laggr.exe", "ERROR", MB_ICONERROR);
+        return 1;
+    }
+    
+    result = postRequest(key, hwid);
+    if (result == 1) {
+        MessageBox(NULL, "Invalid key. Ensure 'key.txt' is accurate. No trailing space", "KEY ERROR", MB_ICONERROR);
+        return 1;
+    }
+    else if (result == -1) {
+        MessageBox(NULL, "Invalid hardware id.", "HWID ERROR", MB_ICONERROR);
+        return 1;
+    }
+    else if (result == -2) {
+        MessageBox(NULL, "Buy a new key", "EXPIRED KEY", MB_ICONERROR);
+        return 1;
+    }
+    else if (result == -3) {
+        MessageBox(NULL, "UNKNOWN ERROR\nCheck key file and try again", "UNKNOWN ERROR", MB_ICONERROR);
+        return 1;
+    }
+
+    HANDLE hCheckKeyThread;
+    hCheckKeyThread = (HANDLE)_beginthreadex(NULL, 0, keyCheck, NULL, 0, NULL);
+
     // WIN MAIN - ENTRY POINT INTO THE PROGRAM
     WNDCLASSEX wc;
     MSG Msg;

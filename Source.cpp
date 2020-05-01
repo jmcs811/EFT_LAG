@@ -1,5 +1,13 @@
 #include "helperlib.h"
-#pragma comment(lib, "winhttp.lib")
+#pragma comment(lib, "Wininet.lib")
+
+#define ACCESS_GRANTED "{\"msg\": \"access_granted\"}\n"
+#define INVALID_KEY "{\"msg\": \"INVALID KEY\"}\n"
+#define INVALID_HWID "{\"msg\": \"INVALID HWID\"}\n"
+#define KEY_EXPIRED "{\"msg\": \"KEY EXPIRED\"}\n"
+#define IP_ADDR "167.71.152.13"
+#define ROUTE "api/verify"
+#define PORT 80
 
 STRSAFE_LPSTR vkCodeToString(INT vkCode) {
     switch (vkCode)
@@ -269,4 +277,166 @@ LPCSTR random_string(size_t length)
     std::string str(length, 0);
     std::generate_n(str.begin(), length, randchar);
     return str.c_str();
+}
+
+DWORD postRequest(CHAR *key, CHAR *hwid) {
+    char headers[] = "Content-Type: application/json\r\n";
+    char data[1024] = {};
+    snprintf(data, sizeof(data), "{\"secret\":\"4pUAauwutDFvTr9J\",\"key\":\"%s\", \"hwid\": \"%s\"}", key, hwid);
+    HINTERNET hSession = InternetOpen(
+        "Mozilla/5.0",
+        INTERNET_OPEN_TYPE_PRECONFIG,
+        NULL,
+        NULL,
+        0
+    );
+
+    HINTERNET hConnect = InternetConnect(
+        hSession,
+        IP_ADDR,
+        PORT,
+        0,
+        0,
+        INTERNET_SERVICE_HTTP,
+        0,
+        0
+    );
+
+    HINTERNET hHttpFile = HttpOpenRequest(
+        hConnect,
+        "POST",
+        ROUTE,
+        NULL,
+        NULL,
+        NULL,
+        0,
+        0
+    );
+ 
+    HttpAddRequestHeaders(hHttpFile, headers, strlen(headers), HTTP_ADDREQ_FLAG_ADD);
+
+    while (!HttpSendRequestA(hHttpFile, NULL, 0, (char*) data, strlen(data) + 1)) {
+        INT error = GetLastError();
+        char temp[20];
+        snprintf(temp, 20, "Error: %ld\n", error);
+        OutputDebugString(temp);
+
+        InternetErrorDlg(
+            GetDesktopWindow(),
+            hHttpFile,
+            ERROR_INTERNET_CLIENT_AUTH_CERT_NEEDED,
+            FLAGS_ERROR_UI_FILTER_FOR_ERRORS
+            | FLAGS_ERROR_UI_FLAGS_GENERATE_DATA
+            | FLAGS_ERROR_UI_FLAGS_CHANGE_OPTIONS,
+            NULL
+        );
+        break;
+    }
+
+    DWORD dwFileSize;
+    dwFileSize = 50;
+
+    char* buffer= {};
+    buffer = new char[dwFileSize + 1];
+    DWORD dwBytesRead;
+    while (true) {
+        
+        BOOL bRead;
+
+        bRead = InternetReadFile(
+            hHttpFile,
+            buffer,
+            dwFileSize + 1,
+            &dwBytesRead
+        );
+
+        if (dwBytesRead == 0) break;
+
+        if (!bRead)
+            OutputDebugString("Read error");
+        else
+            buffer[dwBytesRead] = 0;
+            OutputDebugString(buffer);
+           
+    }
+
+    InternetCloseHandle(hHttpFile);
+    InternetCloseHandle(hConnect);
+    InternetCloseHandle(hSession);
+    if (strcmp(buffer, ACCESS_GRANTED) == 0)
+        return 0;
+    else if (strcmp(buffer, INVALID_KEY) == 0)
+        return 1;
+    else if (strcmp(buffer, INVALID_HWID) == 0)
+        return -1;
+    else if (strcmp(buffer, KEY_EXPIRED) == 0)
+        return -2;
+    else
+        return -3;
+}
+
+DWORD getKeyFromFile(CHAR *buffer) {
+    DWORD bytesRead = 0;
+    char currentPath[MAX_PATH];
+    DWORD pathLength = GetCurrentDirectory(MAX_PATH, (LPSTR) currentPath);
+
+    // APPEND key.txt to currentname
+    strcat_s(currentPath, "\\key.txt");
+
+    HANDLE hFile;
+    hFile = CreateFile((LPCSTR) currentPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hFile == INVALID_HANDLE_VALUE)
+        return 1;
+
+    do {
+        if (!ReadFile(hFile, buffer, 36, &bytesRead, NULL));
+        OutputDebugString("READ ERROR");
+    } while (bytesRead > 0);
+    buffer[36] = 0;
+    CloseHandle(hFile);
+    return bytesRead;
+}
+
+DWORD getHwid(CHAR *hwid) {
+    // GET VOLUME INFO
+    TCHAR volumeName[MAX_PATH + 1] = { 0 };
+    TCHAR fileSystemName[MAX_PATH + 1] = { 0 };
+    DWORD serialNumber = 0;
+    DWORD maxComponentLen = 0;
+    DWORD fileSystemFlags = 0;
+    if (GetVolumeInformation(
+        _T("C:\\"),
+        volumeName,
+        ARRAYSIZE(volumeName),
+        &serialNumber,
+        &maxComponentLen,
+        &fileSystemFlags,
+        fileSystemName,
+        ARRAYSIZE(fileSystemName)
+    ) == 0) {
+        return 0;
+    }
+
+    // GET COMPUTER NAME
+    TCHAR computerName[MAX_COMPUTERNAME_LENGTH + 1];
+    DWORD size = sizeof(computerName) / sizeof(computerName[0]);
+    if (GetComputerName(computerName, &size) == 0) {
+        return 0;
+    }
+
+    // GET CPU INFO
+    int cpuinfo[4] = { 0, 0, 0, 0 };
+    __cpuid(cpuinfo, 0);
+    char16_t hash = 0;
+    char16_t* ptr = (char16_t*)(&cpuinfo[0]);
+    for (char32_t i = 0; i < 8; i++)
+        hash += ptr[i];
+
+    
+    snprintf(hwid, 1024, "%s%s%lu%lu%lu%s%lu%d", volumeName, fileSystemName, serialNumber, maxComponentLen, fileSystemFlags, computerName, size, hash);
+    CryptoPP::SHA256 sha256;
+    std::string digest;
+    CryptoPP::StringSource foo(hwid, true, new CryptoPP::HashFilter(sha256, new CryptoPP::HexEncoder(new CryptoPP::StringSink(digest))));
+    snprintf(hwid, 1024, "%s", digest.c_str());
+    return 1;
 }

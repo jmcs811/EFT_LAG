@@ -50,13 +50,8 @@ END
 // Bitmap
 //
 
-IDB_BITMAP1             BITMAP                  "bitmap1.bmp"
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// IDC_SAVE_LAG
-//
+IDB_BITMAP1             BITMAP                  "X:\\Users\\jcasey\\source\\repos\\Project1\\bitmap1.bmp"
+SoundName               WAVE                    "X:\\Users\\jcasey\\source\\repos\\Project1\\beep-08b.wav"
 
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////

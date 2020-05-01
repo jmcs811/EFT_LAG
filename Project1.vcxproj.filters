@@ -33,6 +33,9 @@
     <ClInclude Include="helperlib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="resource2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Project1.cpp">
@@ -69,6 +72,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="idc_save.bin">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\..\..\..\downloads\wave2.bin">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>
